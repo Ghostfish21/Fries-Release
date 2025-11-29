@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine.Scripting;
 
 namespace Fries.EvtSystem {
     [AttributeUsage(AttributeTargets.Method)]
-    public class EvtListener : Attribute {
+    public class EvtListener : PreserveAttribute {
         public readonly Type type;
         public readonly float priority;
         public readonly bool canBeExternallyCancelled;
