@@ -1,0 +1,11 @@
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\bin\Debug\netstandard2.0\EvtsysSrcgen.deps.json
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\bin\Debug\netstandard2.0\EvtsysSrcgen.dll
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\bin\Debug\netstandard2.0\EvtsysSrcgen.pdb
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\obj\Debug\netstandard2.0\EvtsysSrcgen.csproj.AssemblyReference.cache
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\obj\Debug\netstandard2.0\EvtsysSrcgen.GeneratedMSBuildEditorConfig.editorconfig
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\obj\Debug\netstandard2.0\EvtsysSrcgen.AssemblyInfoInputs.cache
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\obj\Debug\netstandard2.0\EvtsysSrcgen.AssemblyInfo.cs
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\obj\Debug\netstandard2.0\EvtsysSrcgen.csproj.CoreCompileInputs.cache
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\obj\Debug\netstandard2.0\EvtsysSrcgen.sourcelink.json
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\obj\Debug\netstandard2.0\EvtsysSrcgen.dll
+C:\Guiyuuuuu\Code\UnityProj\Fries Util Pack\Assets\Fries\Srcgen~\EvtsysSrcgen\obj\Debug\netstandard2.0\EvtsysSrcgen.pdb
