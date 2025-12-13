@@ -513,8 +513,6 @@ namespace Fries.EvtSystem {
             }
         }
 
-        public string[] loadAssemblies;
-
         private void Awake() {
             if (ies) {
                 Destroy(gameObject);

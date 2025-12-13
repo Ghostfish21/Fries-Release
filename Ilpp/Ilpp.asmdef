@@ -1,0 +1,22 @@
+{
+    "name": "Unity.Ilpp.CodeGen",
+    "rootNamespace": "",
+    "references": [
+        "GUID:886b47d9f63217b4581cf21185f54f80"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Unity.Burst.Cecil.dll",
+        "Unity.Burst.Cecil.Rocks.dll",
+        "Unity.Burst.Cecil.Pdb.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
