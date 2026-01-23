@@ -2,14 +2,8 @@
 using UnityEngine.Scripting;
 
 namespace Fries.EvtSystem {
-    [AttributeUsage(AttributeTargets.Struct)]
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
     public class EvtDeclarer : PreserveAttribute { }
-
-    [AttributeUsage(AttributeTargets.Field)]
-    public class O : PreserveAttribute {
-        public readonly int order;
-        public O(int order) => this.order = order;
-    }
     
     public class GlobalEvt {}
 }

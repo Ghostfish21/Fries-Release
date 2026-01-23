@@ -525,19 +525,12 @@ namespace Fries.EvtSystem {
             
             EvtInitializer.createAllEvents(registerEventByType);
             EvtInitializer.createAllListeners(registerListenerByDelegate, registerListenerByReflection);
+            
+            Evt.TriggerNonAlloc<Events.OnEvtsysLoaded>();
         }
 
-        private void registerEventByType(Type type) {
+        private void registerEventByType(Type type, Type[] fieldTypes) {
             try {
-                Type[] fieldTypes = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
-                    .OrderBy(f => f.MetadataToken).Select((field, naturalIndex) => {
-                        var orderAttr = field.GetCustomAttribute<O>();
-                        int sortKey = naturalIndex;
-                        if (orderAttr != null) sortKey = orderAttr.order;
-                        return new { Field = field, SortKey = sortKey, NaturalIndex = naturalIndex };
-                    }).OrderBy(item => item.SortKey).ThenBy(item => item.NaturalIndex)
-                    .Select(item => item.Field.FieldType).ToArray();
-                
                 declareEvent(type.DeclaringType ?? typeof(GlobalEvt), type.Name, fieldTypes);
             } catch (Exception e) {
                 Debug.LogError($"Error when declaring event {type.FullName}: {e}");

@@ -30,16 +30,15 @@ namespace Fries.EvtSystem {
         }
         
         
-        
-        public static void createAllEvents(Action<Type> registerEventByType) {
+        public static void createAllEvents(Action<Type, Type[]> registerEventByType) {
             foreach (var evtInitializer in initializers) {
                 evtInitializer.declare(registerEventByType);
             }
         }
 
-        protected Action<Type> registerEventByType;
+        protected Action<Type, Type[]> registerEventByType;
 
-        protected virtual void declare(Action<Type> registerEventByType) {
+        protected virtual void declare(Action<Type, Type[]> registerEventByType) {
             this.registerEventByType = registerEventByType;
         }
     }

@@ -6,6 +6,8 @@ namespace Fries.EvtSystem {
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class EvtCallback : PreserveAttribute {
         // TODO 禁止泛型类声明该callback方法
+        // TODO 添加 创建方法时，会自动调用 base.Awake 的 bool
+        
         public readonly Type type;
         public readonly float priority;
         public readonly bool canBeExternallyCancelled;
