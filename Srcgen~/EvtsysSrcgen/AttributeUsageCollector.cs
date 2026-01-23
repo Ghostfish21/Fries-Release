@@ -10,7 +10,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Fries.EvtsysSrcgen {
-
     [Generator]
     public class AttributeUsageCollector : ISourceGenerator {
         private const string VERSION = "1.2";
@@ -48,7 +47,10 @@ namespace Fries.EvtsysSrcgen {
             context.RegisterForSyntaxNotifications(() => new EvtAttrReceiver());
         }
 
-        public void Execute(GeneratorExecutionContext context) { 
+        public void Execute(GeneratorExecutionContext context) {
+            processedClasses.Clear();
+            classDeclHashSet.Clear();
+            
             string assemblyName = context.Compilation.AssemblyName;
             assemblyName = AssemblyNameUtils.toValidClassName(assemblyName);
             resetLog(assemblyName);
@@ -103,17 +105,89 @@ namespace Fries.EvtsysSrcgen {
                 log(assemblyName, $"Detected {receiver.candidateStructs.Count} structs with EvtDeclarer attribute..."); 
                 handleListener(receiver, context, assemblyName, sb, targetAttrSymbol4Method, evtCallbackAttrSymbol, symbolDisplayFormat);
                 handleEvent(receiver, context, assemblyName, sb, targetAttrSymbol4Struct, symbolDisplayFormat);
-                
 
                 sb.AppendLine("    }");
+                
                 sb.AppendLine("}");
-
+                
+                createPartialClasses4(compilation, sb, symbolDisplayFormat);
+                
                 context.AddSource($"{assemblyName}EvtInitializer.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
 
                 log(assemblyName, "Code generated: \n" + sb);
             }
             catch (Exception e) {
                 log(assemblyName, "Encountered exception during code generation: " + e);
+            }
+        }
+
+        private static readonly SymbolDisplayFormat namespaceFormat =
+            new SymbolDisplayFormat(globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+                typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
+        private readonly List<ClassDeclarationSyntax> processedClasses = new List<ClassDeclarationSyntax>();
+
+        private void createPartialClasses4(Compilation compilation, StringBuilder sb,
+            SymbolDisplayFormat symbolDisplayFormat) {
+            foreach (var classDeclaration in processedClasses) {
+                var model = compilation.GetSemanticModel(classDeclaration.SyntaxTree);
+                var typeSymbol = model.GetDeclaredSymbol(classDeclaration);
+                if (!(typeSymbol is INamedTypeSymbol symbol)) continue;
+                string classFullname = typeSymbol.ToDisplayString(symbolDisplayFormat);
+
+                bool b = false;
+                string arguments;
+                StringBuilder typeNames = new StringBuilder();
+                List<string> fieldTypes = new List<string>();
+                List<string> fieldNames = new List<string>();
+                foreach (var member in classDeclaration.Members) {
+                    if (!(member is FieldDeclarationSyntax fieldDeclarationSyntax)) continue;
+                    foreach (var varDeclareSyntax in fieldDeclarationSyntax.Declaration.Variables) {
+                        if (!(model.GetDeclaredSymbol(varDeclareSyntax) is IFieldSymbol sym)) continue;
+                        string fieldNameWithAtIfAny = varDeclareSyntax.Identifier.Text;
+                        fieldNames.Add(fieldNameWithAtIfAny);
+                        string fieldType = sym.Type.ToDisplayString(symbolDisplayFormat);
+                        fieldTypes.Add(fieldType);
+                        typeNames.Append(fieldType).Append(" ").Append(fieldNameWithAtIfAny).Append(", ");
+                        b = true;
+                    }
+                }
+
+                arguments = typeNames.ToString();
+                if (b) arguments = arguments.Substring(0, typeNames.Length - 2);
+
+                string namespaceName = null;
+                var ns = symbol.ContainingNamespace;
+                if (!(ns is null) && !(ns.IsGlobalNamespace))
+                    namespaceName = ns.ToDisplayString(namespaceFormat);
+                string simpleClassName = classDeclaration.Identifier.Text;
+
+                if (namespaceName != null)
+                    sb.Append("namespace ").Append(namespaceName).AppendLine(" {");
+                sb.Append("    public partial class ").Append(simpleClassName).AppendLine(" {");
+                sb.Append("        public static void TriggerNonAlloc(").Append(arguments).AppendLine(") {");
+                sb.Append("            ").Append(classFullname).Append(" data = ClassEvtParamPool<")
+                    .Append(classFullname).AppendLine(">.pop();");
+                foreach (var fieldName in fieldNames)
+                    sb.Append("            data.").Append(fieldName).Append(" = ").Append(fieldName).AppendLine(";");
+                sb.Append("            Evt.TriggerNonAlloc<").Append(classFullname).AppendLine(">(data);");
+                sb.Append("            ClassEvtParamPool<").Append(classFullname).AppendLine(">.push(data);");
+                sb.AppendLine("        }");
+
+                bool isWritable = simpleClassName.EndsWith("W");
+                for (int i = 0; i < fieldNames.Count; i++) {
+                    string fieldType = fieldTypes[i];
+                    string fieldName = fieldNames[i];
+                    fieldName = fieldName.Substring(0, 1).ToUpper() + fieldName.Substring(1);
+                    sb.Append("        public ").Append(fieldType).Append(" get").Append(fieldName).Append("() => ").Append(fieldNames[i]).AppendLine(";");
+                    if (isWritable)
+                        sb.Append("        public void set").Append(fieldName).Append("(").Append(fieldType).Append(" ")
+                            .Append(fieldNames[i]).Append(") => ").Append("this.").Append(fieldNames[i]).Append(" = ").Append(fieldNames[i]).AppendLine(";");
+                }
+
+                sb.AppendLine("    }");
+                if (namespaceName != null)
+                    sb.AppendLine("}");
+                sb.AppendLine();
             }
         }
 
@@ -389,22 +463,26 @@ namespace Fries.EvtsysSrcgen {
         private void handleEvent(EvtAttrReceiver declarer, GeneratorExecutionContext context, string assemblyName, StringBuilder sb, INamedTypeSymbol targetAttrSymbol, SymbolDisplayFormat symbolDisplayFormat) {
             sb.AppendLine("        protected override void declare(Action<Type, Type[]> registerEventByType) {");
             sb.AppendLine("            base.declare(registerEventByType);");
+
+            List<TypeDeclarationSyntax> types = new List<TypeDeclarationSyntax>();
+            types.AddRange(declarer.candidateClasses);
+            types.AddRange(declarer.candidateStructs);
             
             Compilation compilation = context.Compilation;
-            foreach (var structDeclaration in declarer.candidateStructs) {
-                var model = compilation.GetSemanticModel(structDeclaration.SyntaxTree);
-                object structt = model.GetDeclaredSymbol(structDeclaration);
-                if (structt == null) {
-                    log(assemblyName, $"Could not get struct symbol of model {model}, skipping...");
+            foreach (var typeDeclaration in types) {
+                var model = compilation.GetSemanticModel(typeDeclaration.SyntaxTree);
+                object typeDclr = model.GetDeclaredSymbol(typeDeclaration);
+                if (typeDclr == null) {
+                    log(assemblyName, $"Could not get type symbol of model {model}, skipping...");
                     continue;
                 }
 
-                if (!(structt is INamedTypeSymbol structSymbol)) {
-                    log(assemblyName, $"Could not get valid struct symbol of model {model}, skipping...");
+                if (!(typeDclr is INamedTypeSymbol typeSymbol)) {
+                    log(assemblyName, $"Could not get valid type symbol of model {model}, skipping...");
                     continue;
                 }
 
-                var attributes = structSymbol.GetAttributes();
+                var attributes = typeSymbol.GetAttributes();
 
                 AttributeData ad = null;
                 foreach (var attribute in attributes) {
@@ -417,30 +495,46 @@ namespace Fries.EvtsysSrcgen {
 
                 if (ad == null) {
                     log(assemblyName,
-                        $"Turns out struct {structSymbol.Name} does not have the target EvtDeclarer attribute, skipping...");
+                        $"Turns out type {typeSymbol.Name} does not have the target EvtDeclarer attribute, skipping...");
                     continue;
                 }
 
-                bool b = false;
-                string typeNames = "";
-                foreach (var structDeclarationMember in structDeclaration.Members) {
-                    if (!(structDeclarationMember is FieldDeclarationSyntax fieldDeclarationSyntax)) continue;
-                    foreach (var varDeclareSyntax in fieldDeclarationSyntax.Declaration.Variables) {
-                        if (!(model.GetDeclaredSymbol(varDeclareSyntax) is IFieldSymbol sym)) continue;
-                        typeNames += $"typeof({sym.Type.ToDisplayString(symbolDisplayFormat)}), ";
-                        b = true;
-                    }
-                }
-                if (b) typeNames = typeNames.Substring(0, typeNames.Length - 2);
-                string typeArray = "new Type[] {" + typeNames + "}";
-                
-                string structTypeFullName = structSymbol.ToDisplayString(symbolDisplayFormat);
-                sb.AppendLine($"            this.registerEventByType(typeof({structTypeFullName}), {typeArray});");
+                if (typeDeclaration is StructDeclarationSyntax) 
+                    handleStructs(typeDeclaration, model, symbolDisplayFormat, typeSymbol, sb);
+                else if (typeDeclaration is ClassDeclarationSyntax)
+                    handleClasses(typeDeclaration, symbolDisplayFormat, typeSymbol, sb);
 
                 sb.AppendLine();
             }
 
             sb.AppendLine("        }");
+        }
+
+        private readonly HashSet<ClassDeclarationSyntax> classDeclHashSet = new HashSet<ClassDeclarationSyntax>();
+        private void handleClasses(TypeDeclarationSyntax typeDeclaration, SymbolDisplayFormat symbolDisplayFormat, INamedTypeSymbol typeSymbol, StringBuilder sb) {
+            if (classDeclHashSet.Contains((ClassDeclarationSyntax)typeDeclaration)) return;
+            processedClasses.Add((ClassDeclarationSyntax)typeDeclaration);
+            classDeclHashSet.Add((ClassDeclarationSyntax)typeDeclaration);
+            string classFullName = typeSymbol.ToDisplayString(symbolDisplayFormat);
+            sb.Append("            this.registerEventByType(typeof(").Append(classFullName).Append("), new[] { typeof(").Append(classFullName).AppendLine(") });");
+        }
+
+        private void handleStructs(TypeDeclarationSyntax typeDeclaration, SemanticModel model, SymbolDisplayFormat symbolDisplayFormat, INamedTypeSymbol typeSymbol, StringBuilder sb) {
+            bool b = false;
+            string typeNames = "";
+            foreach (var structDeclarationMember in typeDeclaration.Members) {
+                if (!(structDeclarationMember is FieldDeclarationSyntax fieldDeclarationSyntax)) continue;
+                foreach (var varDeclareSyntax in fieldDeclarationSyntax.Declaration.Variables) {
+                    if (!(model.GetDeclaredSymbol(varDeclareSyntax) is IFieldSymbol sym)) continue;
+                    typeNames += $"typeof({sym.Type.ToDisplayString(symbolDisplayFormat)}), ";
+                    b = true;
+                }
+            }
+            if (b) typeNames = typeNames.Substring(0, typeNames.Length - 2);
+            string typeArray = "new Type[] {" + typeNames + "}";
+                
+            string structTypeFullName = typeSymbol.ToDisplayString(symbolDisplayFormat);
+            sb.AppendLine($"            this.registerEventByType(typeof({structTypeFullName}), {typeArray});");
         }
 
         private T getArgValue<T>(AttributeData data, int position, string name, T defaultValue) {
