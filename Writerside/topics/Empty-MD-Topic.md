@@ -18,7 +18,7 @@ A system that passes and consumes the input signal layer by layer. The system is
 ![Input Dispatcher.png](Input Dispatcher.png)
 
 ### Network Persistent Object
-Persistence framework that automatically loads/unloads network primitives (e.g., **NetworkVariable<T>**, **NetworkList<T>**) and plain C# objects; implemented with **Roslyn Source Generators**.
+Persistence framework that automatically loads/unloads network primitives (e.g., **`NetworkVariable<T>`**, **`NetworkList<T>`**) and plain C# objects; implemented with **Roslyn Source Generators**.
 ![NetPersistObject.png](NetPersistObject.png)
 
 ### Everything Pool
